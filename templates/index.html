@@ -3,8 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-
+    <div id="index">
+        <el-row>
+            <el-col :span="24">
+                <div class="head" align="center">
+                    请输入服务器信息
+                </div>
+            </el-col>
+        </el-row>
+        <el-row type="flex" justify="center">
+            <el-col :span="12">
+                <el-form ref="cp_info" :model="cp_info" label-width="80px">
+                    <el-form-item label="IP地址">
+                        <el-input v-model="cp_info.address" clearable></el-input>
+                    </el-form-item>
+                    <el-form-item label="用户名">
+                        <el-input v-model="cp_info.username" clearable></el-input>
+                    </el-form-item>
+                    <el-form-item label="密码">
+                        <el-input v-model="cp_info.password" clearable></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="submit">查看状态</el-button>
+                        <el-button @click="clear">清空</el-button>
+                    </el-form-item>
+                </el-form>
+            </el-col>
+        </el-row>
+{#        <el-row type="flex" justify="center">#}
+{#            <el-col :span="2">IP地址</el-col>#}
+{#            <el-col :span="10">#}
+{#                <el-input v-model="address" placeholder="请输入服务器IP" clearable></el-input>#}
+{#            </el-col>#}
+{#        </el-row>#}
+{#        <el-row type="flex" justify="center">#}
+{#            <el-col :span="2">用户名</el-col>#}
+{#            <el-col :span="10">#}
+{#                <el-input v-model="username" placeholder="请输入服务器IP" clearable></el-input>#}
+{#            </el-col>#}
+{#        </el-row>#}
+{#        <el-row type="flex" justify="center">#}
+{#            <el-col :span="2">密码</el-col>#}
+{#            <el-col :span="10">#}
+{#                <el-input v-model="password" placeholder="请输入服务器IP" clearable></el-input>#}
+{#            </el-col>#}
+{#        </el-row>#}
+    </div>
 </body>
+<script src="{{ url_for('static', filename='js/vue.js') }}"></script>
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script>
+    let index = new Vue({
+        el: '#index',
+        data: function () {
+            return{
+                cp_info:{
+                    address: '',
+                    username: '',
+                    password: ''
+                }
+            }
+        },
+        methods:{
+            submit(){
+                console.log(this.cp_info.username);
+            },
+            clear(){
+                this.cp_info.address = '';
+                this.cp_info.username = '';
+                this.cp_info.password = ''
+            }
+        }
+    });
+</script>
 </html>
