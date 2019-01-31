@@ -15,66 +15,113 @@
             </el-col>
         </el-row>
         <el-row type="flex" justify="center">
-            <el-col :span="12">
-                <el-form ref="cp_info" :model="cp_info" label-width="80px">
-                    <el-form-item label="IP地址">
+            <el-col :span="12" v-loading="loading">
+                <el-form ref="cp_info" :model="cp_info" :rules="rules" label-width="80px" label-position="right">
+                    <el-form-item label="IP地址" prop="address">
                         <el-input v-model="cp_info.address" clearable></el-input>
                     </el-form-item>
-                    <el-form-item label="用户名">
+                    <el-form-item label="用户名" prop="username">
                         <el-input v-model="cp_info.username" clearable></el-input>
                     </el-form-item>
-                    <el-form-item label="密码">
-                        <el-input v-model="cp_info.password" clearable></el-input>
+                    <el-form-item label="密码" prop="password">
+                        <el-input v-model="cp_info.password" v-bind:type="password_type">
+                            <!-- 密码显示不现实切换 -->
+                            <i slot="suffix" v-bind:title="password_view_title" class="el-icon-view" @click="view_password"></i>
+                        </el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="submit">查看状态</el-button>
-                        <el-button @click="clear">清空</el-button>
+                        <el-button type="success" @click="connect('cp_info')">测试连接</el-button>
+                        <el-button type="primary" @click="status('cp_info')">查看状态</el-button>
+                        <el-button @click="reset('cp_info')">重置</el-button>
                     </el-form-item>
                 </el-form>
             </el-col>
         </el-row>
-{#        <el-row type="flex" justify="center">#}
-{#            <el-col :span="2">IP地址</el-col>#}
-{#            <el-col :span="10">#}
-{#                <el-input v-model="address" placeholder="请输入服务器IP" clearable></el-input>#}
-{#            </el-col>#}
-{#        </el-row>#}
-{#        <el-row type="flex" justify="center">#}
-{#            <el-col :span="2">用户名</el-col>#}
-{#            <el-col :span="10">#}
-{#                <el-input v-model="username" placeholder="请输入服务器IP" clearable></el-input>#}
-{#            </el-col>#}
-{#        </el-row>#}
-{#        <el-row type="flex" justify="center">#}
-{#            <el-col :span="2">密码</el-col>#}
-{#            <el-col :span="10">#}
-{#                <el-input v-model="password" placeholder="请输入服务器IP" clearable></el-input>#}
-{#            </el-col>#}
-{#        </el-row>#}
     </div>
 </body>
 <script src="{{ url_for('static', filename='js/vue.js') }}"></script>
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/axios.js') }}"></script>
+<script src="{{ url_for('static', filename='js/validator_custom.js') }}"></script>
 <script>
     let index = new Vue({
         el: '#index',
         data: function () {
+            // 自定义IP验证
+            var ip_check = (rule, value, callback) =>{
+                let re = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
+                if (!re.test(value)){
+                    callback(new Error('IP地址不正确'));
+                } else{
+                    callback();
+                }
+            };
             return{
+                // 初始化表单
                 cp_info:{
                     address: '',
                     username: '',
-                    password: ''
+                    password: '',
+                },
+                loading: false,
+                // 密码切换绑定参数
+                password_type: 'password',
+                password_view_title: '显示密码',
+                // 校验规则
+                rules:{
+                    address:[
+                        { required: true, message: 'IP地址不能为空', trigger: 'blur' },
+                        { validator: ip_check, trigger: 'blur' }
+                    ],
+                    username:[
+                        { required: true, message: '用户名不能为空', trigger: 'blur'}
+                    ],
+                    password:[
+                        { required: true, message: '密码不能为空', trigger: 'blur'}
+                    ]
                 }
             }
         },
         methods:{
-            submit(){
-                console.log(this.cp_info.username);
+            connect(form_name){
+                this.$refs[form_name].validate((valid) =>{
+                    if (valid) {
+                        axios.post('/test_connect', this.cp_info)
+                        .then(function (response){
+                            console.log(response);
+                        }).catch(function (error){
+                            console.log('连接失败');
+                        })
+                    } else{
+                        console.log('校验失败');
+                    }
+                });
             },
-            clear(){
-                this.cp_info.address = '';
-                this.cp_info.username = '';
-                this.cp_info.password = ''
+            status(form_name){
+                this.loading = true;
+                this.$refs[form_name].validate((valid) =>{
+                    if (valid) {
+                        axios.post('/status', this.cp_info)
+                        .then((response) => {
+                            let message = 'CPU: ' + response.data.cpu + '%<br>MEM: ' + response.data.mem + '%';
+                            this.$alert(message, '服务器信息', {
+                                confirmButtonText: '确定',
+                                dangerouslyUseHTMLString: true
+                            });
+                            this.loading = false;
+                        }).catch((error) => {
+                            this.$message.error('链接错误: ' + error);
+                            this.loading = false;
+                        }) 
+                    }
+                });
+            },
+            reset(form_name){
+                this.$refs[form_name].resetFields();
+            },
+            view_password(){
+                this.password_type = this.password_type == 'password'?'text':'password';
+                this.password_view_title = this.password_view_title == '显示密码'?'隐藏密码':'显示密码';
             }
         }
     });
