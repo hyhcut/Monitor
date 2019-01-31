@@ -22,6 +22,14 @@ class link:
             server_cert_validation='ignore')
         # self.session = winrm.Session(self.host, auth=(self.user, self.password))
 
+    def run_ps(self, scripts):
+        shell_id = self.session.open_shell()
+        encoded_ps = b64encode(scripts.encode('utf_16_le')).decode('ascii')
+        command_id = self.session.run_command(shell_id, 'powershell -encodedcommand {0}'.format(encoded_ps))
+        std_out, std_err, status_code = self.session.get_command_output(shell_id, command_id)
+        self.session.close_shell(shell_id)
+        return std_out, std_err, status_code
+
     def test(self):
         # self.session.run_ps('dir')
         shell_id = self.session.open_shell()
@@ -32,11 +40,7 @@ class link:
         ps_script = """$Server = $env:computername
             $cpu = Get-WMIObject –computername $Server win32_Processor
             "{0:0.0}" -f $cpu.LoadPercentage"""
-        shell_id = self.session.open_shell()
-        encoded_ps = b64encode(ps_script.encode('utf_16_le')).decode('ascii')
-        command_id = self.session.run_command(shell_id, 'powershell -encodedcommand {0}'.format(encoded_ps))
-        std_out, std_err, status_code = self.session.get_command_output(shell_id, command_id)
-        self.session.close_shell(shell_id)
+        std_out, std_err, status_code = self.run_ps(ps_script)
         result = str(std_out, encoding='utf-8')
         cpu_used = float(result.strip('\n').strip('\r'))
         print(cpu_used)
@@ -45,11 +49,7 @@ class link:
     def get_mem(self):
         script = """$mem = gwmi win32_OperatingSystem
             "{0:0.0}" -f ((($mem.TotalVisibleMemorySize-$mem.FreePhysicalMemory)/$mem.TotalVisibleMemorySize)*100)"""
-        shell_id = self.session.open_shell()
-        encoded_ps = b64encode(script.encode('utf_16_le')).decode('ascii')
-        command_id = self.session.run_command(shell_id, 'powershell -encodedcommand {0}'.format(encoded_ps))
-        std_out, std_err, status_code = self.session.get_command_output(shell_id, command_id)
-        self.session.close_shell(shell_id)
+        std_out, std_err, status_code = self.run_ps(script)
         result = str(std_out, encoding='utf-8')
         mem_used = float(result.strip('\n').strip('\r'))
         print(mem_used)
